@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     (options, args) = parser.parse_args()
 
-    if len(args) < 2:
+    if len(args) != 2:
         logging.critical("Invalid number of parameters, at least two directories are expected.")
         parser.print_help()
         sys.exit(1)
@@ -37,6 +37,11 @@ if __name__ == '__main__':
             logging.critical("This parameter isn't a valid directory: %s" % (a))
             parser.print_help()
             sys.exit(1)
+
+    if not args[0].endswith("/"):
+        args[0] += "/"
+    if not args[1].endswith("/"):
+        args[1] += "/"
 
     results = finder.compare_pdf_dirs(args[0], args[1])
 

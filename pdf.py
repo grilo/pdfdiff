@@ -20,7 +20,7 @@ class File:
 
     def to_image(self, path=None, size=None):
         if not path: path = self.path
-        command = "convert %s -append -alpha remove" % (path)
+        command = "convert -transparent-color white %s -append" % (path)
         if size:
             logging.warning("Resizing (%s) to %s" % (path, size))
             command += " -resize %s -gravity north -extent %s" % (size, size)
@@ -32,7 +32,19 @@ class File:
         command = "identify %s" % (path)
         return self.__run_cmd(command)[0].split()[2]
 
-    def diff_image(self, format='pdf'):
+    def diff_gif(self):
+        command = "convert -transparent-color white -depth 24 -quality 100 -delay 200 -loop 0 '%s' '%s' gif:-" % (self.path, self.alt_path)
+        return self.__run_cmd(command)[0]
+
+    def diff_pdf(self):
+        if not self.alt_path:
+            raise Exception("Unable to perform comparison since I don't have an alt_path to look for.")
+        command = "compare '%s' '%s' -" % (self.path, self.alt_path)
+        logging.warning("Comparing (%s) and (%s)." % (self.path, self.alt_path))
+        stdout, stderr = self.__run_cmd(command)
+        return stdout
+
+    def diff_image(self):
         if not self.alt_path:
             raise Exception("Unable to perform comparison since I don't have an alt_path to look for.")
 
@@ -46,7 +58,9 @@ class File:
         modified.write(self.to_image(self.alt_path, size))
         modified.close()
 
-        command = "compare '%s' '%s' -" % (original.name, modified.name)
+        #command = "compare -compose Src -quality 100 -transparent-color white '%s' '%s' png24:-" % (original.name, modified.name)
+        command = "convert '%s' '%s' -colorspace Gray -compose difference -composite png24:-" % (original.name, modified.name)
+
         logging.warning("Comparing (%s) and (%s)." % (self.path, self.alt_path))
         stdout, stderr = self.__run_cmd(command)
 

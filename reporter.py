@@ -4,7 +4,7 @@ import logging
 import os
 
 
-def generate_report(results, output='diff'):
+def generate_report(results, output='delta'):
 
     if not os.path.isdir(output):
         logging.warning("Directory (%s) doesn't exist. Creating..." % (output))
@@ -40,11 +40,14 @@ def generate_report(results, output='diff'):
 
         for f in results['modified']:
             fullpath = os.path.join(output, f.path + ".png")
-            basedir = os.path.dirname(fullpath)
             out = f.diff_image()
+            #fullpath = os.path.join(output, f.path + ".gif")
+            #out = f.diff_gif()
+            basedir = os.path.dirname(fullpath)
             if not os.path.isdir(basedir):
                 os.makedirs(basedir)
             if os.path.isfile(fullpath):
                 os.unlink(fullpath)
-            with open(fullpath, 'wb') as diff_img:
-                diff_img.write(out)
+            with open(fullpath, 'wb') as diff_file:
+                logging.debug("Writing diff: %s" % (fullpath))
+                diff_file.write(out)

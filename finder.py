@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import logging
 import os
 import re
 import subprocess
@@ -17,19 +18,13 @@ def compare_sets(left, right):
 
     return common, left, right
 
-def is_pdf(filename):
-    with open(filename) as f:
-        filetype = subprocess.Popen("/usr/bin/file -b --mime -", shell=True, stdout=subprocess.PIPE, stdin=subprocess.PIPE).communicate(f.read(1024))[0].strip()
-        if filetype == "application/pdf; charset=binary": return True
-        return False
-
 def find_pdfs(rootdir):
     files_set = set()
     for (dirpath, dirnames, filenames) in os.walk(rootdir):
         for filename in filenames:
             full_path = os.path.join(dirpath, filename)
             relative_path = full_path.replace(rootdir, "", 1)
-            if is_pdf(full_path):
+            if full_path.endswith(".pdf"):
                 files_set.add(relative_path)
 
     return files_set
