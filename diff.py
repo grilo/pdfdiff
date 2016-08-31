@@ -26,7 +26,6 @@ class File(object):
         return self.path
 
 
-
 class PDF(File):
 
     def __init__(self, path, left, right):
