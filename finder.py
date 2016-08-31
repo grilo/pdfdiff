@@ -5,7 +5,6 @@ import os
 import re
 import subprocess
 import hashlib
-import pdf
 
 
 class Tree:
