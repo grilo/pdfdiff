@@ -7,62 +7,71 @@ import subprocess
 import hashlib
 import pdf
 
-def compare_sets(left, right):
 
-    left = set(left)
-    right = set(right)
+class Tree:
 
-    common = left.intersection(right)
-    left = left.difference(right)
-    right = right.difference(common)
+    def __init__(self, left_dir, right_dir, filter, diff_obj):
+        self.left_dir = left_dir
+        self.right_dir = right_dir
+        self.filter = filter
+        self.diff_obj = diff_obj
+        self.modified = []
+        self.unmodified = []
+        self.deleted = []
+        self.added = []
 
-    return common, left, right
+        self.compute()
 
-def find_pdfs(rootdir):
-    files_set = set()
-    for (dirpath, dirnames, filenames) in os.walk(rootdir):
-        for filename in filenames:
-            full_path = os.path.join(dirpath, filename)
-            relative_path = full_path.replace(rootdir, "", 1)
-            if full_path.endswith(".pdf"):
-                files_set.add(relative_path)
+    def _find(self, rootdir):
+        files_set = set()
+        for (dirpath, dirnames, filenames) in os.walk(rootdir):
+            for filename in filenames:
+                full_path = os.path.join(dirpath, filename)
+                relative_path = full_path.replace(rootdir, "", 1)
+                if full_path.endswith(self.filter):
+                    files_set.add(relative_path)
+        return files_set
 
-    return files_set
+    def _digest(self, filename):
+        with open(filename, 'rb') as f:
+            return hashlib.md5(f.read()).hexdigest()
 
-def digest(filename):
-    with open(filename, 'rb') as f:
-        return hashlib.md5(f.read()).hexdigest()
+    def _compare(self, left, right):
 
-def compare_pdf_dirs(left_dir, right_dir):
-    left_pdfs = find_pdfs(left_dir)
-    right_pdfs = find_pdfs(right_dir)
+        left = set(left)
+        right = set(right)
 
-    common, left, right = compare_sets(left_pdfs, right_pdfs)
+        common = left.intersection(right)
+        left = left.difference(right)
+        right = right.difference(common)
 
-    modified = []
-    unmodified = []
-    deleted = []
-    added = []
+        return common, left, right
 
-    for f in common:
-        old_path = os.path.join(left_dir, f)
-        new_path = os.path.join(right_dir, f)
-        old = digest(old_path)
-        new = digest(new_path)
-        if digest(old_path) == digest(new_path):
-            unmodified.append(pdf.File(old_path))
-        else:
-            modified.append(pdf.File(new_path, old_path))
+    def compute(self):
 
-    for f in left:
-        deleted.append(pdf.File(os.path.join(left_dir, f)))
+        left_pdfs = self._find(self.left_dir)
+        right_pdfs = self._find(self.right_dir)
 
-    for f in right:
-        added.append(pdf.File(os.path.join(right_dir, f)))
+        common, left, right = self._compare(left_pdfs, right_pdfs)
 
-    return {
-        'unmodified': unmodified,
-        'modified': modified,
-        'deleted': deleted,
-        'added': added,
-    }
+        for f in common:
+            old_path = os.path.join(self.left_dir, f)
+            new_path = os.path.join(self.right_dir, f)
+            if self._digest(old_path) == self._digest(new_path):
+                self.unmodified.append(self.diff_obj(f, self.left_dir, self.right_dir))
+            else:
+                self.modified.append(self.diff_obj(f, self.left_dir, self.right_dir))
+
+        for f in left:
+            self.deleted.append(self.diff_obj(f, self.left_dir, self.right_dir))
+
+        for f in right:
+            self.added.append(self.diff_obj(f, self.left_dir, self.right_dir))
+
+    def __repr__(self):
+        return """
+        Unmodified: %s
+        Deleted: %s
+        Added: %s
+        Modified: %s
+        """ % (self.unmodified, self.deleted, self.added, self.modified)

@@ -2,52 +2,53 @@
 
 import logging
 import os
+import time
 
 
-def generate_report(results, output='delta'):
+class Generator:
 
-    if not os.path.isdir(output):
-        logging.warning("Directory (%s) doesn't exist. Creating..." % (output))
-        os.makedirs(output)
+    def __init__(self, tree, output_dir='delta'):
+        self.tree = tree
+        self.output_dir = output_dir
 
-    if len(results['unmodified']) == 0:
-        print "No unmodified files."
-    else:
-        print "Unmodified files:"
-        for f in results['unmodified']:
-            print "\t == %s" % (f)
+        if not os.path.isdir(self.output_dir):
+            logging.warning("Directory (%s) doesn't exist. Creating..." % (self.output_dir))
+            os.makedirs(self.output_dir)
 
-    if len(results['deleted']) == 0:
-        print "No deleted files."
-    else:
-        print "Deleted files:"
-        for f in results['deleted']:
-            print "\t -- %s" % (f)
+    def generate(self, extension='gif'):
+        logging.info("Generating report on directory (%s)." % (self.output_dir))
+        string = []
+        string.append("Report for CMS PDF differences (%s)." % (time.strftime("%c")))
 
-    if len(results['added']) == 0:
-        print "No added files."
-    else:
-        print "Added files:"
-        for f in results['added']:
-            print "\t ++ %s" % (f)
+        if len(self.tree.unmodified) == 0:
+            string.append("No unmodified files.")
+        else:
+            string.append("Unmodified files:")
+            for f in self.tree.unmodified:
+                string.append("\t == %s" % (f))
 
-    if len(results['modified']) == 0:
-        print "No modified files."
-    else:
-        print "Modified files:"
-        for f in results['modified']:
-            print "\t != %s" % (f)
+        if len(self.tree.deleted) == 0:
+            string.append("No deleted files.")
+        else:
+            string.append("Deleted files:")
+            for f in self.tree.deleted:
+                string.append("\t -- %s" % (f))
 
-        for f in results['modified']:
-            fullpath = os.path.join(output, f.path + ".png")
-            out = f.diff_image()
-            #fullpath = os.path.join(output, f.path + ".gif")
-            #out = f.diff_gif()
-            basedir = os.path.dirname(fullpath)
-            if not os.path.isdir(basedir):
-                os.makedirs(basedir)
-            if os.path.isfile(fullpath):
-                os.unlink(fullpath)
-            with open(fullpath, 'wb') as diff_file:
-                logging.debug("Writing diff: %s" % (fullpath))
-                diff_file.write(out)
+        if len(self.tree.added) == 0:
+            string.append("No added files.")
+        else:
+            string.append("Added files:")
+            for f in self.tree.added:
+                string.append("\t ++ %s" % (f))
+
+        if len(self.tree.modified) == 0:
+            string.append("No modified files.")
+        else:
+            string.append("Modified files:")
+            for f in self.tree.modified:
+                string.append("\t != %s" % (f))
+
+            for f in self.tree.modified:
+                f.write(self.output_dir, extension='gif')
+        with open(os.path.join(self.output_dir, "summary.txt"), 'w') as summary:
+            summary.write("\n".join(string))
