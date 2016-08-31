@@ -13,7 +13,6 @@ import diff
 def print_help():
     print "Generates a 'diff' directory containing only the files which were modified."
     print "The rest of the changes is simply printed in ASCII."
-    pass
 
 if __name__ == '__main__':
     supported_formats = ['png', 'gif']
